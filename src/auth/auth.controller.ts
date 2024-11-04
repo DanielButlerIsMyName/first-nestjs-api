@@ -9,6 +9,7 @@ import {
 } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { LoginDto } from "./dto/Login.dto";
+import { RegisterDto } from "./dto/Register.dto";
 import { LocalGuard } from "./guards/local.guard";
 import { JwtAuthGuard } from "./guards/jwt.guard";
 
@@ -18,18 +19,25 @@ export class AuthController {
 
   @UseGuards(LocalGuard)
   @Post("login")
-  login(@Body() requestData: LoginDto): string | null {
-    const token = this.authService.validateUser(requestData);
+  async login(@Body() requestData: LoginDto) {
+    const token = await this.authService.validateUser(requestData);
     if (!token) {
       throw new UnauthorizedException("Invalid credentials");
     }
-    return token;
+    return { token };
+  }
+
+  @Post("register")
+  async register(@Body() registerData: RegisterDto) {
+    console.log("Received Register Data:", registerData); // This should show the incoming data structure
+
+    const user = await this.authService.register(registerData);
+    return { message: "User registered successfully", user };
   }
 
   @UseGuards(JwtAuthGuard)
   @Get("status")
   status(@Req() req) {
-    console.debug("status", req.user);
     return req.user;
   }
 }

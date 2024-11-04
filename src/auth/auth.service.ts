@@ -1,23 +1,57 @@
-import { Body, Injectable } from "@nestjs/common";
+import { Injectable, ConflictException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
-import { User } from "./modells/User";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model } from "mongoose";
+import * as bcrypt from "bcryptjs";
+import { User } from "./schemas/user.schema";
 import { LoginDto } from "./dto/Login.dto";
+import { RegisterDto } from "./dto/Register.dto";
 
-const fakeUsers: Array<User> = [{ username: "test", password: "test" }];
 @Injectable()
 export class AuthService {
-  constructor(private jwtservice: JwtService) {}
-  validateUser(loginDto: LoginDto): string | null {
-    console.debug("validateUser auth service", loginDto);
-    const findUser: User = fakeUsers.find(
-      (user: User) => user.username === loginDto.username,
+  constructor(
+    private jwtService: JwtService,
+    @InjectModel(User.name) private userModel: Model<User>,
+  ) {
+    console.log("JwtService in AuthService:", this.jwtService); // Debugging
+    console.log("userModel in AuthService:", this.userModel); // Debugging
+  }
+  async validateUser(loginDto: LoginDto): Promise<string | null> {
+    const user = await this.userModel
+      .findOne({ username: loginDto.username })
+      .exec();
+    if (!user) return null;
+
+    const isPasswordValid = await bcrypt.compare(
+      loginDto.password,
+      user.password,
     );
-    if (!findUser) {
-      return null; // User not found
+    if (!isPasswordValid) return null;
+
+    return this.jwtService.sign({ username: user.username });
+  }
+
+  async register(registerDto: RegisterDto): Promise<User> {
+    const { username, password } = registerDto;
+
+    console.log("Username:", username); // Debugging
+    console.log("Password:", password); // Debugging
+
+    if (!password) {
+      throw new Error("Password is undefined");
     }
-    if (findUser.password !== loginDto.password) {
-      return null; // Wrong password
+
+    const existingUser = await this.userModel.findOne({ username }).exec();
+    if (existingUser) {
+      throw new ConflictException("Username already exists");
     }
-    return this.jwtservice.sign({ username: loginDto.username });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = new this.userModel({
+      username,
+      password: hashedPassword,
+    });
+    return newUser.save();
   }
 }
