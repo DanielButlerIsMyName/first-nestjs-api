@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  mariadb:
+    image: mariadb:latest
+    container_name: nest_mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password  # Change this to a secure password
+      MYSQL_DATABASE: nest_db
+      MYSQL_USER: nest_user
+      MYSQL_PASSWORD: nest_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+volumes:
+  mariadb_data:
