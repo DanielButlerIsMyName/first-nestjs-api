@@ -1,20 +1,19 @@
 import { Controller, Get } from "@nestjs/common";
+import { ApiOkResponse } from "@nestjs/swagger";
 import { AppService } from "./app.service";
+import { CorrelationId } from "./correlation-id.decorator";
 
-/**
- * The AppController class handles incoming HTTP requests and returns responses.
- * It uses the AppService to get the data to be returned.
- */
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
-  /**
-   * Handles GET requests to the root endpoint.
-   * @returns {string} A greeting message.
-   */
   @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  @ApiOkResponse({
+    description: "just get a simple text back",
+    type: String,
+  })
+  getHello(@CorrelationId() correlationId: string): string {
+    console.log(correlationId, "getHello()"); // Log the correlation ID
+    return this.appService.getHello(correlationId);
   }
 }

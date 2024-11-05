@@ -1,12 +1,13 @@
-import { Module } from "@nestjs/common";
+import { Module, NestModule, MiddlewareConsumer } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { User } from "./auth/schemas/user.schema";
 import { AuthModule } from "./auth/auth.module";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { HealthchecksController } from "./healthchecks/healthchecks.controller";
-
+import { CorrelationIdMiddleware } from "./correlation-id.middleware";
+import { LoggerMiddleware } from "./logger.middleware";
+import { User } from "./auth/schemas/user.schema";
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -20,8 +21,8 @@ import { HealthchecksController } from "./healthchecks/healthchecks.controller";
         username: configService.get<string>("MYSQL_USER", "nest_user"),
         password: configService.get<string>("MYSQL_PASSWORD", "nest_password"),
         database: configService.get<string>("MYSQL_DATABASE", "nest_db"),
-        entities: [User], // Directly specify User entity
-        synchronize: true, // Development only
+        entities: [User],
+        synchronize: true,
       }),
     }),
     AuthModule,
@@ -29,4 +30,10 @@ import { HealthchecksController } from "./healthchecks/healthchecks.controller";
   controllers: [AppController, HealthchecksController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(CorrelationIdMiddleware, LoggerMiddleware) // Apply CorrelationIdMiddleware first
+      .forRoutes("*"); // Apply globally
+  }
+}
