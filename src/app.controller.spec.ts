@@ -15,10 +15,21 @@ describe("AppController (e2e)", () => {
     await app.init();
   });
 
+  afterAll(async () => {
+    await app.close();
+  });
+
   it("/ (GET)", () => {
     return request(app.getHttpServer())
       .get("/")
       .expect(200)
-      .expect("Hello World from Dirk!");
+      .expect((res) => {
+        // Check response contains the initial part of the expected text
+        expect(res.text).toMatch(/Hello World! Correlation ID:/);
+
+        // Check for the presence of the x-correlation-id header
+        expect(res.headers).toHaveProperty("x-correlation-id");
+        expect(res.headers["x-correlation-id"]).toBeDefined();
+      });
   });
 });
