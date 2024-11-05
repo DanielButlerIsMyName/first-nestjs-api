@@ -8,6 +8,7 @@ import { HealthchecksController } from "./healthchecks/healthchecks.controller";
 import { CorrelationIdMiddleware } from "./correlation-id.middleware";
 import { LoggerMiddleware } from "./logger.middleware";
 import { User } from "./auth/schemas/user.schema";
+import { ArtikelModule } from './artikel/artikel.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -26,6 +27,7 @@ import { User } from "./auth/schemas/user.schema";
       }),
     }),
     AuthModule,
+    ArtikelModule,
   ],
   controllers: [AppController, HealthchecksController],
   providers: [AppService],
